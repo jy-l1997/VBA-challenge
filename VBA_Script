@@ -1,0 +1,124 @@
+' Plan:
+' initialize  ticker symbol, volm of stock, open price, and close price
+    ' NOTE: need separate variable for beginning of year price, otherwise overwritten
+' use Range("A1").End(xlDown).Row to find total number of rows
+' Create secondary table
+' loop through each row, first comparing ticker to previous row
+    'no matter what, sum volume
+' if different, update close price and find change data
+    'use Range("I1").End(xlDown).Row to find last row of secondary table
+' AFTER CHANGE DATA, Update:
+    'ticker
+    'beginning of year price variable/open price
+'if not different, update temporary variables
+
+Sub TickerData()
+
+    'loop through each worksheet
+    For Each ws In Worksheets
+        ' Create & initialize variable to store ticker
+        Dim ticker As String
+        ticker = ws.Cells(2, 1).Value
+        ' Create variable to track volume
+        Dim volume As Double
+        ' Create & initialize variable to track start of year price
+        Dim beg_price As Double
+        beg_price = ws.Cells(2, 3).Value
+        
+        ' create variable to track price at start/end of each day
+        Dim day As Double
+        Dim fin As Double
+        
+        ' Create table for summary data
+        ws.Cells(1, 9).Value = "Ticker"
+        ws.Cells(1, 10).Value = "Year Change"
+        ws.Cells(1, 11).Value = "Percent Change"
+        ws.Cells(1, 12).Value = "Total Stock Volume"
+        
+        ' Create index for row number on summary table
+        Dim summary As Integer
+        summary = 2
+        
+        ' Find index for last row
+        Dim Last As Double
+        Last = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        
+        
+        ' Create table for greatest increase, decrease, total volume
+        ws.Cells(1, 16).Value = "Ticker"
+        ws.Cells(1, 17).Value = "Value"
+        ws.Cells(2, 15).Value = "Greatest % Increase"
+        ws.Cells(3, 15).Value = "Greatest % Decrease"
+        ws.Cells(4, 15).Value = "Greatest Total Volume"
+                
+        ' Loop through each row, starting row 2
+        For r = 2 To Last
+        
+            ' beginning & end prices for each day (row)
+            fin = ws.Cells(r, 6).Value
+            
+            ' if next row is for same ticker
+            If ws.Cells(r, 1).Value = ws.Cells(r + 1, 1).Value Then
+                
+                'update volume
+                volume = volume + ws.Cells(r, 7).Value
+                
+            Else
+            
+                'fill in summary table, adjusts style
+                ws.Cells(summary, 9).Value = ticker
+                
+                ws.Cells(summary, 10).Value = fin - beg_price
+                ws.Cells(summary, 10).Style = "currency"
+                
+                ws.Cells(summary, 11).Value = WorksheetFunction.Round(ws.Cells(summary, 10).Value / beg_price, 4)
+                ws.Cells(summary, 12).Value = volume + ws.Cells(r, 7).Value
+                
+                
+                ' Colors yearly change increase/decrease
+                If ws.Cells(summary, 10).Value >= 0 Then
+                    ws.Cells(summary, 10).Interior.Color = vbGreen
+                ElseIf ws.Cells(summary, 10).Value < 0 Then
+                    ws.Cells(summary, 10).Interior.Color = vbRed
+                End If
+                
+                ' Colors percent increase/decrease
+                If ws.Cells(summary, 11).Value >= 0 Then
+                    ws.Cells(summary, 11).Interior.Color = vbGreen
+                ElseIf ws.Cells(summary, 11).Value < 0 Then
+                    ws.Cells(summary, 11).Interior.Color = vbRed
+                End If
+                               
+                                               
+                ' update variables
+                volume = 0
+                beg_price = ws.Cells(r + 1, 3).Value
+                ticker = ws.Cells(r + 1, 1).Value
+                summary = summary + 1
+                
+            End If
+
+        Next r
+        
+        ' Populates superlatives table
+        ws.Cells(2, 17).Value = WorksheetFunction.Max(ws.Range("K1", "K" & summary))
+        ws.Cells(3, 17).Value = WorksheetFunction.Min(ws.Range("K1", "K" & summary))
+        ws.Cells(4, 17).Value = WorksheetFunction.Max(ws.Range("l1", "L" & summary))
+        
+        
+        ' Finds tickers
+        For i = 2 To summary - 1
+            ' Greatest inc/dec
+            If ws.Cells(2, 17).Value = ws.Cells(i, 11).Value Then
+                ws.Cells(2, 16).Value = ws.Cells(i, 9).Value
+            ElseIf ws.Cells(3, 17).Value = Cells(i, 11).Value Then
+                ws.Cells(3, 16).Value = ws.Cells(i, 9).Value
+            End If
+            
+            ' Total volume
+            If ws.Cells(4, 17).Value = ws.Cells(i, 12).Value Then
+                ws.Cells(4, 16).Value = ws.Cells(i, 9).Value
+            End If
+        Next i
+    Next ws
+End Sub
